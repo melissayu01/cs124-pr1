@@ -43,6 +43,10 @@ public class Vertex implements Comparable<Vertex>{
 		return key;
 	}
 	
+	public double[] getCoords() {
+		return coords;
+	}
+
 	@Override
     public int compareTo(Vertex that) {
         return Double.compare(this.minDist, that.minDist);

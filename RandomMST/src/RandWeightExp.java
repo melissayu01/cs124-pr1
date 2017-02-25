@@ -1,22 +1,27 @@
+import java.util.Random;
 
 public class RandWeightExp implements Experiment{
-
-	public RandWeightExp() {}
+	
+	Random rnd;
+	
+	public RandWeightExp() {
+		this.rnd = new Random();
+	}
 
 	@Override
-	public String getName() {
+	public String toString() {
 		return "Random Weight Experiment";
 	}
 
 	@Override
 	public double weight(Vertex u, Vertex v) {
-		return Math.random();
+		return rnd.nextDouble();
 	}
 
 	@Override
 	public Vertex[] createGraph(int n_points, int dim) {
 		Vertex[] graph = new Vertex[n_points];
-		double[] coords = {0};
+		double[] coords = {};
 		for (int i = 0; i < n_points; i++) {
 			graph[i] = new Vertex(i, coords);
 		}
