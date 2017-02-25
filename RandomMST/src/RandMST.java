@@ -120,8 +120,8 @@ public class RandMST {
 			key = u.getKey();
 			
 			if (flag > 1) {
-				System.out.println(u);
-				System.out.println( "current priority queue: " + Arrays.toString(
+				System.out.format("\n%s", u);
+				System.out.println( "Current priority queue: " + Arrays.toString(
 						Arrays.copyOfRange(prioQueue, 0, prioQueueEnd)) );
 			}
 							
@@ -129,8 +129,8 @@ public class RandMST {
 				v = vertex(i);				
 				newDist = t.weight(u, v);
 				
-				if (flag > 0) 
-					System.out.println("Weight (" + u.getKey() + "," + v.getKey() + "): " + newDist);
+				if (flag > 1) 
+					System.out.format("Weight (%d, %d): %.4f\n", u.getKey(), v.getKey(), newDist);
 				
 				if (!v.isInMST() && newDist < v.getMinDist()) {
 					v.setPredecessorKey(key);
@@ -139,14 +139,15 @@ public class RandMST {
 			}
 		}
 		long time = System.currentTimeMillis() - startTime;
-		System.out.format("\nFinished creating MST in %d seconds\n", time / 1000);
+		System.out.format("Finished creating MST in %d seconds\n", time / 1000);
 	}
 	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < graph.length; i++) {
 			sb.append(graph[i]);
-			sb.append("\n");
+			if (i != graph.length-1)
+				sb.append("\n");
 		}
 		return sb.toString();
     }
@@ -168,7 +169,7 @@ public class RandMST {
 		        System.exit(1);
 		    }
 		} else {
-			System.err.println("usage: ./randmst flag n_points n_trials dim");
+			System.err.println("Usage: ./randmst flag n_points n_trials dim");
 			System.exit(1);
 		}
 		
@@ -183,9 +184,11 @@ public class RandMST {
 			
 			if (flag > 1)
 				System.out.println(randMST);
-			if (flag > 1)
-				System.out.println("current MST weight: " + weight);
+			if (flag > 0)
+				System.out.format("Current MST weight: %.4f\n\n", weight);
 		}
-		System.out.println("total MST weight: " + totalWeight / n_trials);
+		
+		System.out.format("%.4f %d %d %d", 
+				totalWeight / n_trials, n_points, n_trials, dim);
 	}
 }
