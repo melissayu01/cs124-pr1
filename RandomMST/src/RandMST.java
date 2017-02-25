@@ -75,10 +75,9 @@ public class RandMST {
 		Vertex v = vertex(0);
 		v.setInMST(true);
 		
-		prioQueueEnd--;
+		--prioQueueEnd;
 		prioQueue[0] = prioQueue[prioQueueEnd];	
 		minHeapify(0);
-				
 		return v;
 	}
 	
@@ -113,12 +112,10 @@ public class RandMST {
 				
 		while (prioQueueEnd > 0) {
 			System.out.println("\nnew iteration");
-
 			u = extractMin();
 			key = u.getKey();
 			
 			System.out.println(u);
-			System.out.println(Arrays.toString(prioQueue));
 							
 			for (int i = 0; i < prioQueueEnd; i++) {
 				v = vertex(i);				
@@ -129,10 +126,9 @@ public class RandMST {
 				if (!v.isInMST() && newDist < v.getMinDist()) {
 					v.setPredecessorKey(key);
 					increasePriority(i, newDist);
-					System.out.println("increased prio of " + v.getKey() + ":" + Arrays.toString(prioQueue));
 				}
 			}
-			System.out.println("done with iter: " + Arrays.toString(prioQueue));
+			System.out.println("done with iteration: " + Arrays.toString(prioQueue));
 		}
 	}
 	
