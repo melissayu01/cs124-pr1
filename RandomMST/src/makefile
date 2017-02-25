@@ -1,9 +1,9 @@
 JCC = javac
 JFLAGS = -g
 
-default: RandMST.class EuclideanDistExp.class Experiment.class RandDistExp.class RandWeightExp.class Vertex.class
+default: RandMST.class EuclideanDistExp.class Experiment.class RandDistExp.class Vertex.class
 
-randmst: RandMST.class EuclideanDistExp.class Experiment.class RandDistExp.class RandWeightExp.class Vertex.class
+randmst: RandMST.class EuclideanDistExp.class Experiment.class RandDistExp.class Vertex.class
 
 RandMST.class: RandMST.java
 	$(JCC) $(JFLAGS) RandMST.java
@@ -16,9 +16,6 @@ Experiment.class: Experiment.java
 
 RandDistExp.class: RandDistExp.java
 	$(JCC) $(JFLAGS) RandDistExp.java
-
-RandWeightExp.class: RandWeightExp.java
-	$(JCC) $(JFLAGS) RandWeightExp.java
 
 Vertex.class: Vertex.java
 	$(JCC) $(JFLAGS) Vertex.java
