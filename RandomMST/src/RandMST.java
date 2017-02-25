@@ -107,7 +107,9 @@ public class RandMST {
 		Vertex u, v;
 		int key;
 		double newDist;
-				
+		
+		System.out.println("Creating MST...");
+		
 		while (prioQueueEnd > 0) {
 			System.out.println("\nnew iteration");
 			u = extractMin();
@@ -130,15 +132,14 @@ public class RandMST {
 				}
 			}
 		}
+		System.out.println("\nDone creating MST!");
 	}
 	
 	public static void main(String[] args) {
 		RandWeightExp exp = new RandWeightExp();
-		RandMST randMST = new RandMST(exp, 1, 3, 2);
+		RandMST randMST = new RandMST(exp, 1, 10, 2);
 		randMST.createMST();
 		double weight = randMST.getTreeWeight();
-		
-		System.out.println("\ndone creating MST!");
 		
 		Vertex[] graph = randMST.getGraph();
 		for (int i = 0; i < graph.length; i++) {
