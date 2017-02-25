@@ -6,7 +6,9 @@ tmp/
 *.swp
 *~.nib
 local.properties
+.classpath
 .settings/
+.metadata/
 .loadpath
 .recommenders
 
