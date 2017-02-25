@@ -107,6 +107,7 @@ public class RandMST {
 		Vertex u, v;
 		int key;
 		double newDist;
+		long startTime = System.currentTimeMillis();
 		
 		System.out.println("Creating MST...");
 		
@@ -132,7 +133,8 @@ public class RandMST {
 				}
 			}
 		}
-		System.out.println("\nDone creating MST!");
+		long time = System.currentTimeMillis() - startTime;
+		System.out.format("\nFinished creating MST in %d seconds\n", time / 1000);
 	}
 	
 	public static void main(String[] args) {
