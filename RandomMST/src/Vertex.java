@@ -53,7 +53,7 @@ public class Vertex implements Comparable<Vertex>{
     }
 
     public String toString() {
-        return String.format("V%d %s: (%.5f) (%d=>)", key, Arrays.toString(coords), 
+        return String.format("V%d %s: (%.4f) (%d=>)", key, Arrays.toString(coords), 
         		minDist, predecessorKey);
     }
 
