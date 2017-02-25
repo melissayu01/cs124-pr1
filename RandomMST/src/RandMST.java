@@ -6,15 +6,17 @@ public class RandMST {
 	private int[] prioQueue;
 	private int prioQueueEnd; // exclusive
 	private final Experiment t;
-	private final int n_trials;
 	private final int n_points;	
 	private final int dim;
+	private final int flag;
 
-	public RandMST(Experiment t, int n_trials, int n_points, int dim) {
-		this.t = t;
-		this.n_trials = n_trials;
+	public RandMST(int n_points, int dim, int flag) {
 		this.n_points = n_points;
 		this.dim = dim;
+		this.flag = flag;
+		
+		if (dim == 0) this.t = new RandDistExp();
+		else this.t = new EuclideanDistExp();
 		this.graph = t.createGraph(n_points, dim);
 		
 		this.prioQueue = new int[n_points];
@@ -97,9 +99,8 @@ public class RandMST {
 	
 	private double getTreeWeight() {
 		double weight = 0;
-		for (int i = 0; i < n_points; i++) {
+		for (int i = 0; i < n_points; i++)
 			weight += graph[i].getMinDist();
-		}
 		return weight;
 	}
 	
@@ -109,24 +110,27 @@ public class RandMST {
 		double newDist;
 		long startTime = System.currentTimeMillis();
 		
-		System.out.println("Creating MST...");
+		if (flag > 0)
+			System.out.println("Creating MST...");
 		
 		while (prioQueueEnd > 0) {
-			if ((n_points - prioQueueEnd) % 10000 == 0)
-				System.out.format("\nIteration %d / %d\n", n_points - prioQueueEnd, n_points);
+			if (flag > 0 && (n_points - prioQueueEnd) % 10000 == 0)
+				System.out.format("\n%d / %d vertices added to MST\n", n_points - prioQueueEnd, n_points);
 			u = extractMin();
 			key = u.getKey();
 			
-//			System.out.println(u);
-//			System.out.println( "current priority queue: " + Arrays.toString(
-//					Arrays.copyOfRange(prioQueue, 0, prioQueueEnd)) );
-
+			if (flag > 1) {
+				System.out.println(u);
+				System.out.println( "current priority queue: " + Arrays.toString(
+						Arrays.copyOfRange(prioQueue, 0, prioQueueEnd)) );
+			}
 							
 			for (int i = 0; i < prioQueueEnd; i++) {
 				v = vertex(i);				
 				newDist = t.weight(u, v);
 				
-				System.out.println("Weight (" + u.getKey() + "," + v.getKey() + "): " + newDist);
+				if (flag > 0) 
+					System.out.println("Weight (" + u.getKey() + "," + v.getKey() + "): " + newDist);
 				
 				if (!v.isInMST() && newDist < v.getMinDist()) {
 					v.setPredecessorKey(key);
@@ -148,12 +152,40 @@ public class RandMST {
     }
 	
 	public static void main(String[] args) {
-		Experiment exp = new EuclideanDistExp();
-		RandMST randMST = new RandMST(exp, 1, 4, 2);
-		randMST.createMST();
-		double weight = randMST.getTreeWeight();
-		System.out.println(randMST);
-		System.out.println("total MST weight: " + weight);
+		int flag = 0;
+		int n_points = 0;
+		int n_trials = 0;
+		int dim = 0;
+		
+		if (args.length == 4) {
+		    try {
+		    	flag = Integer.parseInt(args[0]);
+		    	n_points = Integer.parseInt(args[1]);
+		    	n_trials = Integer.parseInt(args[2]);
+		    	dim = Integer.parseInt(args[3]);
+		    } catch (NumberFormatException ex) {
+		        System.err.println("Arguments must be integers.");
+		        System.exit(1);
+		    }
+		} else {
+			System.err.println("usage: ./randmst flag n_points n_trials dim");
+			System.exit(1);
+		}
+		
+		double totalWeight = 0;
+		double weight;
+		RandMST randMST;
+		for (int i = 0; i < n_trials; i++) {
+			randMST = new RandMST(n_points, dim, flag);
+			randMST.createMST();
+			weight = randMST.getTreeWeight();
+			totalWeight += weight;
+			
+			if (flag > 1)
+				System.out.println(randMST);
+			if (flag > 1)
+				System.out.println("current MST weight: " + weight);
+		}
+		System.out.println("total MST weight: " + totalWeight / n_trials);
 	}
-
 }

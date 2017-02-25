@@ -1,4 +1,3 @@
-import java.util.Arrays;
 import java.util.Random;
 
 public class EuclideanDistExp implements Experiment {
@@ -6,7 +5,7 @@ public class EuclideanDistExp implements Experiment {
 	Random rnd;
 	
 	public EuclideanDistExp() {
-		this.rnd = new Random();
+		this.rnd = new Random(System.currentTimeMillis());
 	}
 	
 	@Override
