@@ -1,0 +1,3 @@
+#!/bin/bash
+
+java RandMST $1 $2 $3 $4
