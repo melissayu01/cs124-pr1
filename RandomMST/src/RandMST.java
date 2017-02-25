@@ -112,20 +112,21 @@ public class RandMST {
 		System.out.println("Creating MST...");
 		
 		while (prioQueueEnd > 0) {
-			System.out.println("\nnew iteration");
+			if ((n_points - prioQueueEnd) % 1000 == 0)
+				System.out.format("\nIteration %d / %d\n", n_points - prioQueueEnd, n_points);
 			u = extractMin();
 			key = u.getKey();
 			
-			System.out.println(u);
-			System.out.println( "current priority queue: " + Arrays.toString(
-					Arrays.copyOfRange(prioQueue, 0, prioQueueEnd)) );
+//			System.out.println(u);
+//			System.out.println( "current priority queue: " + Arrays.toString(
+//					Arrays.copyOfRange(prioQueue, 0, prioQueueEnd)) );
 
 							
 			for (int i = 0; i < prioQueueEnd; i++) {
 				v = vertex(i);				
 				newDist = t.weight(u, v);
 				
-				System.out.println("Weight (" + u.getKey() + "," + v.getKey() + "): " + newDist);
+//				System.out.println("Weight (" + u.getKey() + "," + v.getKey() + "): " + newDist);
 				
 				if (!v.isInMST() && newDist < v.getMinDist()) {
 					v.setPredecessorKey(key);
@@ -139,14 +140,14 @@ public class RandMST {
 	
 	public static void main(String[] args) {
 		RandWeightExp exp = new RandWeightExp();
-		RandMST randMST = new RandMST(exp, 1, 10, 2);
+		RandMST randMST = new RandMST(exp, 1, 100000, 2);
 		randMST.createMST();
 		double weight = randMST.getTreeWeight();
 		
-		Vertex[] graph = randMST.getGraph();
-		for (int i = 0; i < graph.length; i++) {
-			System.out.println(graph[i]);
-		}
+//		Vertex[] graph = randMST.getGraph();
+//		for (int i = 0; i < graph.length; i++) {
+//			System.out.println(graph[i]);
+//		}
 		
 		System.out.println("total MST weight: " + weight);
 	}
