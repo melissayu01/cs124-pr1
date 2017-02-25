@@ -54,9 +54,7 @@ public class RandMST {
 		int l = left(i);
 		int r = right(i);
 		int min = i;
-		
-		System.out.println(Arrays.toString(prioQueue));
-		
+				
 		if (l < n_points && vertex(l).compareTo(vertex(i)) < 0)
 			min = l;
 		if (r < n_points && vertex(r).compareTo(vertex(min)) < 0)
@@ -116,6 +114,9 @@ public class RandMST {
 			key = u.getKey();
 			
 			System.out.println(u);
+			System.out.println( "current priority queue: " + Arrays.toString(
+					Arrays.copyOfRange(prioQueue, 0, prioQueueEnd)) );
+
 							
 			for (int i = 0; i < prioQueueEnd; i++) {
 				v = vertex(i);				
@@ -128,7 +129,6 @@ public class RandMST {
 					increasePriority(i, newDist);
 				}
 			}
-			System.out.println("done with iteration: " + Arrays.toString(prioQueue));
 		}
 	}
 	
@@ -138,12 +138,14 @@ public class RandMST {
 		randMST.createMST();
 		double weight = randMST.getTreeWeight();
 		
+		System.out.println("\ndone creating MST!");
+		
 		Vertex[] graph = randMST.getGraph();
 		for (int i = 0; i < graph.length; i++) {
 			System.out.println(graph[i]);
 		}
 		
-		System.out.println(weight);
+		System.out.println("total MST weight: " + weight);
 	}
 
 }
