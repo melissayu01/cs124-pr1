@@ -57,9 +57,9 @@ public class RandMST {
 		int r = right(i);
 		int min = i;
 				
-		if (l < n_points && vertex(l).compareTo(vertex(i)) < 0)
+		if (l < prioQueueEnd && vertex(l).compareTo(vertex(i)) < 0)
 			min = l;
-		if (r < n_points && vertex(r).compareTo(vertex(min)) < 0)
+		if (r < prioQueueEnd && vertex(r).compareTo(vertex(min)) < 0)
 			min = r;
 		if (min != i) {
 			int tmp = prioQueue[i];
@@ -75,8 +75,8 @@ public class RandMST {
 		Vertex v = vertex(0);
 		v.setInMST(true);
 		
-		--prioQueueEnd;
-		prioQueue[0] = prioQueue[prioQueueEnd];	
+		prioQueueEnd -= 1;
+		prioQueue[0] = prioQueue[prioQueueEnd];			
 		minHeapify(0);
 		return v;
 	}
@@ -114,13 +114,13 @@ public class RandMST {
 			System.out.println("Creating MST...");
 		
 		while (prioQueueEnd > 0) {
-			if (flag > 0 && (n_points - prioQueueEnd) % 10000 == 0)
+			if (flag > 1 && (n_points - prioQueueEnd) % 10000 == 0)
 				System.out.format("\n%d / %d vertices added to MST\n", n_points - prioQueueEnd, n_points);
 			u = extractMin();
 			key = u.getKey();
 			
 			if (flag > 1) {
-				System.out.format("\n%s", u);
+				System.out.format("\n%s\n", u);
 				System.out.println( "Current priority queue: " + Arrays.toString(
 						Arrays.copyOfRange(prioQueue, 0, prioQueueEnd)) );
 			}
@@ -139,7 +139,8 @@ public class RandMST {
 			}
 		}
 		long time = System.currentTimeMillis() - startTime;
-		System.out.format("Finished creating MST in %d seconds\n", time / 1000);
+		if (flag > 0) 
+			System.out.format("...Finished creating MST in %d seconds\n", time / 1000);
 	}
 	
 	public String toString() {
@@ -152,7 +153,7 @@ public class RandMST {
 		return sb.toString();
     }
 	
-	public static void main(String[] args) {
+	public static double runExperiment(String[] args) {
 		int flag = 0;
 		int n_points = 0;
 		int n_trials = 0;
@@ -165,7 +166,7 @@ public class RandMST {
 		    	n_trials = Integer.parseInt(args[2]);
 		    	dim = Integer.parseInt(args[3]);
 		    } catch (NumberFormatException ex) {
-		        System.err.println("Arguments must be integers.");
+		        System.err.println("Arguments must be integers");
 		        System.exit(1);
 		    }
 		} else {
@@ -173,6 +174,7 @@ public class RandMST {
 			System.exit(1);
 		}
 		
+		long startTime = System.currentTimeMillis();
 		double totalWeight = 0;
 		double weight;
 		RandMST randMST;
@@ -182,13 +184,20 @@ public class RandMST {
 			weight = randMST.getTreeWeight();
 			totalWeight += weight;
 			
-			if (flag > 1)
+			if (flag > 1) {
+				System.out.println("\nFinal MST:");
 				System.out.println(randMST);
+			}
 			if (flag > 0)
 				System.out.format("Current MST weight: %.4f\n\n", weight);
 		}
-		
-		System.out.format("%.4f %d %d %d", 
+		System.out.format("=========== %d MSTs created in %d minutes ===========\n", n_trials, (System.currentTimeMillis() - startTime) / (60 * 1000));
+		System.out.format("%.4f %d %d %d\n", 
 				totalWeight / n_trials, n_points, n_trials, dim);
+		return totalWeight / n_trials;
+	}
+	
+	public static void main(String[] args) {
+		runExperiment(args);
 	}
 }

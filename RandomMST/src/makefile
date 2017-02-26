@@ -20,6 +20,5 @@ RandDistExp.class: RandDistExp.java
 Vertex.class: Vertex.java
 	$(JCC) $(JFLAGS) Vertex.java
 
-
 clean: 
 	$(RM) *.class

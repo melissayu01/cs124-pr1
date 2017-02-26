@@ -39,7 +39,7 @@ public class EuclideanDistExp implements Experiment {
 	}
 	
 	public static void main(String[] args) {
-		int n_points = 3;
+		int n_points = 5;
 		int dim = 3;
 
 		EuclideanDistExp ede = new EuclideanDistExp();
@@ -48,7 +48,7 @@ public class EuclideanDistExp implements Experiment {
         	System.out.println(graph[i]);
 
 		for (int i = 0; i < n_points; i++)
-			for (int j = i; j < n_points; j++)
+			for (int j = i+1; j < n_points; j++)
 				System.out.format("Weight (%d, %d): %.3f\n", i, j, ede.weight(graph[i], graph[j]));
     }
 
