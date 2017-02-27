@@ -132,7 +132,7 @@ public class RandMST {
 				if (flag > 1) 
 					System.out.format("Weight (%d, %d): %.4f\n", u.getKey(), v.getKey(), newDist);
 				
-				if (!v.isInMST() && newDist < v.getMinDist()) {
+				if (newDist < v.getMinDist()) {
 					v.setPredecessorKey(key);
 					increasePriority(i, newDist);
 				}
@@ -153,7 +153,31 @@ public class RandMST {
 		return sb.toString();
     }
 	
-	public static double runExperiment(String[] args) {
+	public static double runExperiment(int flag, int n_points, int n_trials, int dim) {
+		long startTime = System.currentTimeMillis();
+		double totalWeight = 0;
+		double weight;
+		RandMST randMST;
+		for (int i = 0; i < n_trials; i++) {
+			randMST = new RandMST(n_points, dim, flag);
+			randMST.createMST();
+			weight = randMST.getTreeWeight();
+			totalWeight += weight;
+			
+			if (flag > 1) {
+				System.out.println("\nFinal MST:");
+				System.out.println(randMST);
+			}
+			if (flag > 0)
+				System.out.format("Current MST weight: %.4f\n\n", weight);
+		}
+		System.out.format("=========== %d MSTs created in %d minutes ===========\n", n_trials, (System.currentTimeMillis() - startTime) / (60 * 1000));
+		System.out.format("%.4f %d %d %d\n\n", 
+				totalWeight / n_trials, n_points, n_trials, dim);
+		return totalWeight / n_trials;
+	}
+	
+	public static void main(String[] args) {
 		int flag = 0;
 		int n_points = 0;
 		int n_trials = 0;
@@ -174,30 +198,6 @@ public class RandMST {
 			System.exit(1);
 		}
 		
-		long startTime = System.currentTimeMillis();
-		double totalWeight = 0;
-		double weight;
-		RandMST randMST;
-		for (int i = 0; i < n_trials; i++) {
-			randMST = new RandMST(n_points, dim, flag);
-			randMST.createMST();
-			weight = randMST.getTreeWeight();
-			totalWeight += weight;
-			
-			if (flag > 1) {
-				System.out.println("\nFinal MST:");
-				System.out.println(randMST);
-			}
-			if (flag > 0)
-				System.out.format("Current MST weight: %.4f\n\n", weight);
-		}
-		System.out.format("=========== %d MSTs created in %d minutes ===========\n", n_trials, (System.currentTimeMillis() - startTime) / (60 * 1000));
-		System.out.format("%.4f %d %d %d\n", 
-				totalWeight / n_trials, n_points, n_trials, dim);
-		return totalWeight / n_trials;
-	}
-	
-	public static void main(String[] args) {
-		runExperiment(args);
+		runExperiment(flag, n_points, n_trials, dim);
 	}
 }
