@@ -1,13 +1,24 @@
 import java.util.Arrays;
 
+/**  
+ *  Class representing a vertex in a graph.
+ *
+ */
+
 public class Vertex implements Comparable<Vertex>{
 	
     private double minDist = Double.POSITIVE_INFINITY;
     private int predecessorKey = -1;
-    private boolean isInMST = false;
     private final double[] coords;
     private final int key;
     
+    /**
+     * Initializes a vertex with given key and coordinates.
+     *
+     * @param  key unique integer identifier associated with vertex
+     * @param  coords array of coordinates for vertex
+     * @throws IllegalArgumentException if key is negative
+     */
     public Vertex(int key, double[] coords) {
         if (key < 0) 
         	throw new IllegalArgumentException("vertex key must be a nonnegative integer");
@@ -29,14 +40,6 @@ public class Vertex implements Comparable<Vertex>{
 
 	public void setPredecessorKey(int predecessorKey) {
 		this.predecessorKey = predecessorKey;
-	}
-
-	public boolean isInMST() {
-		return isInMST;
-	}
-
-	public void setInMST(boolean isInMST) {
-		this.isInMST = isInMST;
 	}
 	
 	public int getKey() {

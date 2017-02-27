@@ -1,5 +1,18 @@
 import java.util.Arrays;
 
+/**
+ * Main class generating MSTs on complete graphs.
+ * 
+ * Implements an internal priority queue and generates new random graph 
+ * during initialization according to the experiment type. The main method 
+ * of this class can be called in the command line thus:
+ * 
+ * ./randmst <verbosity> <numpoints> <numtrials> <dimension>
+ *	
+ * where `verbosity` specifies the verbosity of the output 
+ * (0 for minimal, 1 for moderate, and 2 for maximal).
+ */
+
 public class RandMST {
 	
 	private final Vertex[] graph;
@@ -9,7 +22,14 @@ public class RandMST {
 	private final int n_points;	
 	private final int dim;
 	private final int flag;
-
+	
+	/**
+     * Initializes a MST generator for a new random graph with 
+     * the given number of vertices, vertex coordinate dimensions, and verbosity.
+     * @param  n_points number of vertices in graph
+     * @param  dim dimension of vertex coordinates
+     * @param  flag verbosity of output
+     */
 	public RandMST(int n_points, int dim, int flag) {
 		this.n_points = n_points;
 		this.dim = dim;
@@ -73,7 +93,6 @@ public class RandMST {
 		if (prioQueueEnd <= 0)
 			throw new IllegalArgumentException("no items left in queue");
 		Vertex v = vertex(0);
-		v.setInMST(true);
 		
 		prioQueueEnd -= 1;
 		prioQueue[0] = prioQueue[prioQueueEnd];			
@@ -171,7 +190,8 @@ public class RandMST {
 			if (flag > 0)
 				System.out.format("Current MST weight: %.4f\n\n", weight);
 		}
-		System.out.format("=========== %d MSTs created in %d minutes ===========\n", n_trials, (System.currentTimeMillis() - startTime) / (60 * 1000));
+		if (flag > 0)
+			System.out.format("=========== %d MSTs created in %d minutes ===========\n", n_trials, (System.currentTimeMillis() - startTime) / (60 * 1000));
 		System.out.format("%.4f %d %d %d\n\n", 
 				totalWeight / n_trials, n_points, n_trials, dim);
 		return totalWeight / n_trials;

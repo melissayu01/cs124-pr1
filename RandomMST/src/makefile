@@ -1,7 +1,7 @@
 JCC = javac
 JFLAGS = -g
 
-default: RandMST.class EuclideanDistExp.class Experiment.class RandDistExp.class Vertex.class Script.class
+default: RandMST.class EuclideanDistExp.class Experiment.class RandDistExp.class Vertex.class
 
 randmst: RandMST.class EuclideanDistExp.class Experiment.class RandDistExp.class Vertex.class
 
@@ -19,9 +19,6 @@ RandDistExp.class: RandDistExp.java
 
 Vertex.class: Vertex.java
 	$(JCC) $(JFLAGS) Vertex.java
-
-Script.class: Script.java
-	$(JCC) $(JFLAGS) Script.java
 
 clean: 
 	$(RM) *.class
