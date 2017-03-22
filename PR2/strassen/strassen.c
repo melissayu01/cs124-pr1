@@ -1,87 +1,8 @@
+#include "strassen.h"
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <inttypes.h>
-#include <math.h>
-#include <getopt.h>
-#include <assert.h>
 #include <time.h>
 #include <sys/time.h>
-
-// MATRIX HELPER FUNCTIONS
-
-// me(m, stride, i, j)
-//    Return a pointer to submatrix element `m[i][j]` -- the element
-//    at row `i` and column `j`, where the stride (number of columns)
-//    in the original matrix is `stride`. Requires: `i < sz && j < sz`
-static inline int* me(int* m, size_t stride, size_t i, size_t j) {
-    return &m[i * stride + j];
-}
-
-// print_mat(m, sz, stride)
-//    Prints square matrix `m` with dimension `sz`.
-void print_mat(int* m, size_t sz, size_t stride) {
-    for (size_t i = 0; i < sz; ++i) {
-        for (size_t j = 0; j < sz; ++j)
-            printf("\t%d", *me(m, stride, i, j));
-        printf("\n");
-    }
-    printf("\n");
-}
-
-// equals(a, b, sz)
-//    Returns 1 if matrices `a` and `b` with size `sz` are equal element-wise.
-int equals(int* a, int* b, size_t sz) {
-    for (size_t i = 0; i < sz; ++i)
-        for (size_t j = 0; j < sz; ++j)
-            if (*me(a, sz, i, j) != *me(b, sz, i, j)) {
-                printf("%d != %d\n", *me(a, sz, i, j), *me(b, sz, i, j));
-                return 0;
-            }
-    return 1;
-}
-
-// zero_mat(m, sz, stride)
-//    Initializes all entries in submatrix at `m` with `sz` and `stride` to 0.
-void zero_mat(int* m, size_t sz, size_t stride) {
-    for (size_t i = 0; i < sz; ++i)
-        for (size_t j = 0; j < sz; ++j)
-            *me(m, stride, i, j) = 0;
-}
-
-// pad(pm, m, sz, thresh)
-//    Allocates memory for and statically pads matrix `m` to the
-//    smallest size `padded_sz` such that `padded_sz >= thresh * 1 >> k`
-//    for any non-negative integer `k`. Padding is applied on the
-//    bottom and right columns. Returns padded size.
-size_t pad(int** pm, int* m, size_t sz, size_t thresh) {
-    // find size of statically padded matrix
-    size_t padded_sz = thresh ? thresh : sz;
-    while (padded_sz < sz)
-        padded_sz = padded_sz << 1;
-
-    // create new matrix with size padded_sz and fill it
-    *pm = calloc(padded_sz * padded_sz, sizeof(int));
-    for (size_t i = 0; i < sz; ++i)
-        for (size_t j = 0; j < sz; ++j)
-            *me(*pm, padded_sz, i, j) = *me(m, sz, i, j);
-
-    return padded_sz;
-}
-
-// add_submat(c, a, b, sz, stride, sub_flag)
-//    Adds submatrices `a` and `b`, each of dimension `sz x sz`
-//    and places the result in the submatrix of `c` with the
-//    same dimensions, where the stride for all submatrices is `stride`.
-//    Subtracts `a` and `b` if `sub_flag == 1`.
-void add_submat(int* c, int* a, int* b, size_t sz, size_t stride, int sub_flag) {
-    for (size_t i = 0; i < sz; ++i)
-        for (size_t j = 0; j < sz; ++j)
-            *me(c, stride, i, j) = *me(a, stride, i, j) +
-                (sub_flag ? -1 : 1) * *me(b, stride, i, j);
-}
-
+#include <getopt.h>
 
 // MATRIX MULTIPLICATION
 
@@ -188,14 +109,13 @@ void strassen_matrix_multiply(int* c, int* a, int* b, size_t sz, size_t thresh) 
     psz = pad(&pb, b, sz, thresh);
 
     // allocate padded output matrix
-    pc = (int*) malloc(sizeof(int) * psz * psz);
-
-    // clear output matrices
-    zero_mat(pc, psz, psz);
-    zero_mat(c, sz, sz);
+    pc = (int*) calloc(psz * psz, sizeof(int));
 
     // call recursive multiply
     rec_strassen_mult(pc, pa, pb, psz, psz, thresh);
+
+    // clear output matrix
+    zero_mat(c, sz, sz);
 
     // remove padding and store to c
     for (size_t i = 0; i < sz; ++i)
@@ -209,60 +129,161 @@ void strassen_matrix_multiply(int* c, int* a, int* b, size_t sz, size_t thresh) 
 }
 
 
-int main(int argc, char* argv[]) {
-    srand(time(NULL));
+// I/O AND TESTING
 
-    int max_int = 2;
-    size_t sz = 1000;
+// file_to_mat(fname, a, b, sz)
+//    Reads 2 square matrices, each with dimension `sz`, sequentially into
+//    the memory at `a` and `b`. (Does not allocate memory for `a` and `b`.)
+void file_to_mat(char* fname, int* a, int* b, size_t sz) {
+    FILE* fp = fopen(fname, "r");
+    if (!fp) {
+        perror(fname);
+        exit(EXIT_FAILURE);
+    }
+    for (size_t i = 0; i < pow(sz, 2); ++i)
+        fscanf(fp, "%d", &a[i]);
+    for (size_t i = 0; i < pow(sz, 2); ++i)
+        fscanf(fp, "%d", &b[i]);
+
+    fclose(fp);
+}
+
+// rand_mat_to_file(fname, sz, max_val)
+//    Writes 2 square matrices, each with dimension `sz`, sequentially into
+//    file `fname`. All entries in matrices are in the range [0, max_val).
+void rand_mat_to_file(char* fname, size_t sz, int max_val) {
+    srand(time(NULL));
+    FILE* fp = fopen(fname, "w");
+    if (!fp) {
+        perror(fname);
+        exit(EXIT_FAILURE);
+    }
+    for (size_t i = 0; i < 2 * pow(sz, 2); ++i)
+        fprintf(fp, "%d\n", rand() % max_val);
+    fclose(fp);
+}
+
+// usage()
+//    Prints usage instructions to stderr.
+static inline void usage(void) {
+    fprintf(stderr, "Usage: ./strassen [-v VERBOSITY] [-n SIZE] [-f INPUT]\n");
+}
+
+typedef struct matrix_statistics {
+    int corner[4];
+    int diagonal_sum;
+    int* diagonal;
+} matrix_statistics;
+
+// compute_statistics(m, sz)
+//    Compute and return some statistics about matrix `m`.
+matrix_statistics compute_statistics(int* m, size_t sz) {
+    matrix_statistics mstat;
+    mstat.corner[0] = *me(m, sz, 0, 0);
+    mstat.corner[1] = *me(m, sz, 0, sz-1);
+    mstat.corner[2] = *me(m, sz, sz-1, 0);
+    mstat.corner[3] = *me(m, sz, sz-1, sz-1);
+    mstat.diagonal = calloc(sz, sizeof(int));
+    mstat.diagonal_sum = 0;
+    for (size_t i = 0; i < sz; ++i) {
+        mstat.diagonal[i] = *me(m, sz, i, i);
+        mstat.diagonal_sum += mstat.diagonal[i];
+    }
+    return mstat;
+}
+
+
+int main(int argc, char* argv[]) {
+    // parameters
     size_t thresh = 125;
 
-    // setup
-    assert(sz > 0);
-    assert(sz < (size_t) sqrt(SIZE_MAX / sizeof(int)));
-    struct timeval s_time0, s_time1, b_time0, b_time1;
+    // read options
+    size_t sz = 0;
+    int vb = 0;
+    char* fname = NULL;
+
+    int opt;
+    while ((opt = getopt(argc, argv, "v:n:f:")) != -1)
+        switch (opt) {
+        case 'v':
+            vb = strtoul(optarg, NULL, 0);
+            break;
+        case 'n':
+            sz = strtoul(optarg, NULL, 0);
+            break;
+        case 'f':
+            fname = optarg;
+            break;
+        default:
+            usage();
+            exit(EXIT_FAILURE);
+        }
+
+    if (!(sz > 0 && sz < (size_t) sqrt(SIZE_MAX / sizeof(int))
+        && (vb == 0 || vb == 1) && fname != NULL)) {
+        usage();
+        exit(EXIT_FAILURE);
+    }
+    struct timeval time0, time1, time2, time3;
+
+    // TEMPORARY: generate random matrix for testing
+    rand_mat_to_file(fname, sz, 2);
 
     // allocate matrices
-    int* a = (int*) malloc(sizeof(int) * sz * sz);
-    int* b = (int*) malloc(sizeof(int) * sz * sz);
-    int* c_base = (int*) malloc(sizeof(int) * sz * sz);
-    int* c_strassen = (int*) malloc(sizeof(int) * sz * sz);
+    int* a = (int*) calloc(sz * sz, sizeof(int));
+    int* b = (int*) calloc(sz * sz, sizeof(int));
+    int* c = (int*) calloc(sz * sz, sizeof(int));
 
     // fill in source matrices
-    for (size_t i = 0; i < sz; ++i)
-	   for (size_t j = 0; j < sz; ++j)
-            *me(a, sz, i, j) = rand() % max_int;
+    file_to_mat(fname, a, b, sz);
 
-    for (size_t i = 0; i < sz; ++i)
-	   for (size_t j = 0; j < sz; ++j)
-	      *me(b, sz, i, j) = rand() % max_int;
-
-    // strassen matrix multiply
-    printf("computing strassen...\n");
-    gettimeofday(&s_time0, NULL);
-    strassen_matrix_multiply(c_strassen, a, b, sz, thresh);
-    gettimeofday(&s_time1, NULL);
-
-    // base matrix multiply
-    printf("computing base...\n");
-    gettimeofday(&b_time0, NULL);
-    base_matrix_multiply(c_base, a, b, sz, sz);
-    gettimeofday(&b_time1, NULL);
-
-    // print results
-    int is_equal = equals(c_base, c_strassen, sz);
-    printf("matrices are equal: %d\n", is_equal);
+    // compute `c = a x b`
+    if (vb)
+        printf("computing strassen...\n");
+    gettimeofday(&time0, NULL);
+    strassen_matrix_multiply(c, a, b, sz, thresh);
+    gettimeofday(&time1, NULL);
+    matrix_statistics strassen_mstat = compute_statistics(c, sz);
 
     // compute times, print times and ratio
-    timersub(&s_time1, &s_time0, &s_time1);
-    timersub(&b_time1, &b_time0, &b_time1);
-    printf("base multiply time %ld.%06ds\n", b_time1.tv_sec, b_time1.tv_usec);
-    double time_ratio = (s_time1.tv_sec + s_time1.tv_usec * 0.000001)
-        / (b_time1.tv_sec + b_time1.tv_usec * 0.000001);
-    printf("strassen multiply time %ld.%06ds (%gx)\n",
-           s_time1.tv_sec, s_time1.tv_usec, time_ratio);
+    if (vb) {
+        zero_mat(c, sz, sz);
+
+        printf("computing base...\n");
+        gettimeofday(&time2, NULL);
+        base_matrix_multiply(c, a, b, sz, sz);
+        gettimeofday(&time3, NULL);
+        matrix_statistics base_mstat = compute_statistics(c, sz);
+
+        timersub(&time1, &time0, &time1);
+        timersub(&time3, &time2, &time3);
+        printf("base multiply time %ld.%06ds\n", time3.tv_sec, time3.tv_usec);
+        double time_ratio = (time1.tv_sec + time1.tv_usec * 0.000001)
+            / (time3.tv_sec + time3.tv_usec * 0.000001);
+        printf("strassen multiply time %ld.%06ds (%gx)\n",
+               time1.tv_sec, time1.tv_usec, time_ratio);
+
+        // print statistics and differences
+        for (int i = 0; i < 4; ++i)
+            printf("corner statistic %d: base %d\n"
+                  "                    strassen %d (%d%% off)\n",
+                  i, base_mstat.corner[i], strassen_mstat.corner[i],
+                  100 * abs(strassen_mstat.corner[i] - base_mstat.corner[i]) / base_mstat.corner[i]);
+        printf("diagonal sum statistic: base %d\n"
+          "                        strassen %d (%d%% off)\n",
+          base_mstat.diagonal_sum, strassen_mstat.diagonal_sum,
+          100 * abs(strassen_mstat.diagonal_sum - base_mstat.diagonal_sum) / base_mstat.diagonal_sum);
+
+        free(base_mstat.diagonal);
+    }
+
+    // print diagonal
+    if (!vb)
+        for (size_t i = 0; i < sz; ++i)
+            printf("%d\n", strassen_mstat.diagonal[i]);
+    free(strassen_mstat.diagonal);
 
     free(a);
     free(b);
-    free(c_base);
-    free(c_strassen);
+    free(c);
 }
