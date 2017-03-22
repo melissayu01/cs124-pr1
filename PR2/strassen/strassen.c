@@ -214,7 +214,7 @@ int main(int argc, char* argv[]) {
 
     int max_int = 2;
     size_t sz = 1000;
-    size_t thresh = 512;
+    size_t thresh = 100;
 
     // setup
     assert(sz > 0);
@@ -256,8 +256,8 @@ int main(int argc, char* argv[]) {
     timersub(&s_time1, &s_time0, &s_time1);
     timersub(&b_time1, &b_time0, &b_time1);
     printf("base multiply time %ld.%06lds\n", b_time1.tv_sec, b_time1.tv_usec);
-    double time_ratio = (b_time1.tv_sec + b_time1.tv_usec * 0.000001)
-        / (s_time1.tv_sec + s_time1.tv_usec * 0.000001);
+    double time_ratio = (s_time1.tv_sec + s_time1.tv_usec * 0.000001)
+        / (b_time1.tv_sec + b_time1.tv_usec * 0.000001);
     printf("strassen multiply time %ld.%06lds (%gx)\n",
            s_time1.tv_sec, s_time1.tv_usec, time_ratio);
 
