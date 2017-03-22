@@ -9,83 +9,88 @@
 #include <time.h>
 #include <sys/time.h>
 
-// RANDOM
-
-// xrandom()
-//    Return a pseudo-random number in the range [0, XRAND_MAX].
-//    We use our own generator to ensure values computed on different
-//    OSes will follow the same sequence.
-#define XRAND_MAX 10 // 0x7FFFFFFF
-static uint64_t xrandom_seed;
-unsigned xrandom() {
-    xrandom_seed = xrandom_seed * 6364136223846793005U + 1U;
-    return (xrandom_seed >> 32) & XRAND_MAX;
-}
-
-
-// MATRIX HELPERS
+// MATRIX HELPER FUNCTIONS
 
 // me(m, stride, i, j)
-//    Return a pointer to matrix element `m[i][j]` -- the element
-//    at row `i` and column `j`. The matrix has dimensions
-//    `n_row` and `n_col`. Requires: `i < n_row && j < n_col`
+//    Return a pointer to submatrix element `m[i][j]` -- the element
+//    at row `i` and column `j`, where the stride (number of columns)
+//    in the original matrix is `stride`. Requires: `i < sz && j < sz`
 static inline int* me(int* m, size_t stride, size_t i, size_t j) {
-    assert(j < stride);
     return &m[i * stride + j];
 }
 
-// pad(m, sz, i, j)
-//    Allocates memory for and fills matrix statically padded to the
+// print_mat(m, sz, stride)
+//    Prints square matrix `m` with dimension `sz`.
+void print_mat(int* m, size_t sz, size_t stride) {
+    for (size_t i = 0; i < sz; ++i) {
+        for (size_t j = 0; j < sz; ++j)
+            printf("\t%d", *me(m, stride, i, j));
+        printf("\n");
+    }
+    printf("\n");
+}
+
+// equals(a, b, sz)
+//    Returns 1 if matrices `a` and `b` with size `sz` are equal element-wise.
+int equals(int* a, int* b, size_t sz) {
+    for (size_t i = 0; i < sz; ++i)
+        for (size_t j = 0; j < sz; ++j)
+            if (*me(a, sz, i, j) != *me(b, sz, i, j)) {
+                printf("%d != %d\n", *me(a, sz, i, j), *me(b, sz, i, j));
+                return 0;
+            }
+    return 1;
+}
+
+// zero_mat(m, sz, stride)
+//    Initializes all entries in submatrix at `m` with `sz` and `stride` to 0.
+void zero_mat(int* m, size_t sz, size_t stride) {
+    for (size_t i = 0; i < sz; ++i)
+        for (size_t j = 0; j < sz; ++j)
+            *me(m, stride, i, j) = 0;
+}
+
+// pad(pm, m, sz, thresh)
+//    Allocates memory for and statically pads matrix `m` to the
 //    smallest size `padded_sz` such that `padded_sz >= thresh * 1 >> k`
-//    for any non-negative integer `k`. Padding is applied on
+//    for any non-negative integer `k`. Padding is applied on the
 //    bottom and right columns. Returns padded size.
 size_t pad(int** pm, int* m, size_t sz, size_t thresh) {
     // find size of statically padded matrix
-    size_t padded_sz = thresh;
+    size_t padded_sz = thresh ? thresh : sz;
     while (padded_sz < sz)
         padded_sz = padded_sz << 1;
 
     // create new matrix with size padded_sz and fill it
     *pm = calloc(padded_sz * padded_sz, sizeof(int));
-    for (size_t i = 0; i < padded_sz; ++i)
+    for (size_t i = 0; i < sz; ++i)
         for (size_t j = 0; j < sz; ++j)
             *me(*pm, padded_sz, i, j) = *me(m, sz, i, j);
 
     return padded_sz;
 }
 
-// add_submat(c, a, b, sz, stride, i, j, sub_flag)
-//    adds submatrices `a` and `b`, each of dimension `sz x sz`
+// add_submat(c, a, b, sz, stride, sub_flag)
+//    Adds submatrices `a` and `b`, each of dimension `sz x sz`
 //    and places the result in the submatrix of `c` with the
-//    same dimensions, where `a`, `b`, `c` are `sz x sz` matrices.
+//    same dimensions, where the stride for all submatrices is `stride`.
+//    Subtracts `a` and `b` if `sub_flag == 1`.
 void add_submat(int* c, int* a, int* b, size_t sz, size_t stride, int sub_flag) {
     for (size_t i = 0; i < sz; ++i)
         for (size_t j = 0; j < sz; ++j)
             *me(c, stride, i, j) = *me(a, stride, i, j) +
-                pow(-1, sub_flag) * *me(b, stride, i, j);
-}
-
-// add(c, a, b, sz, i, j, sub_flag)
-//    adds matrices `a` and `b`, each of dimension `sz x sz`
-//    and places the result in the matrix `c` with the
-//    same dimensions.
-void add(int* c, int* a, int* b, size_t sz, int sub_flag) {
-    for (size_t i = 0; i < sz; ++i)
-        for (size_t j = 0; j < sz; ++j)
-            *me(c, sz, i, j) = *me(a, sz, i, j) + pow(-1, sub_flag) * *me(b, sz, i, j);
+                (sub_flag ? -1 : 1) * *me(b, stride, i, j);
 }
 
 
 // MATRIX MULTIPLICATION
 
-// base_matrix_multiply(c, sz, a, b)
-//    `a`, `b`, and `c` are square matrices with dimension `sz`.
-//    Computes the matrix product `a x b` and stores it in `c`.
-void base_matrix_multiply(int* c, size_t sz, size_t stride, int* a, int* b) {
+// base_matrix_multiply(c, a, b, sz, stride)
+//    `a`, `b`, and `c` are square submatrices with dimension `sz` and
+//    stride `stride`. Computes the matrix product `a x b` and stores it in `c`.
+void base_matrix_multiply(int* c, int* a, int* b, size_t sz, size_t stride) {
     // clear submatrix of `c`
-    for (size_t i = 0; i < sz; ++i)
-        for (size_t j = 0; j < sz; ++j)
-            *me(c, stride, i, j) = 0;
+    zero_mat(c, sz, stride);
 
     // compute product and update `c`
     for (size_t i = 0; i < sz; ++i)
@@ -94,21 +99,23 @@ void base_matrix_multiply(int* c, size_t sz, size_t stride, int* a, int* b) {
                 *me(c, stride, i, j) += *me(a, stride, i, k) * *me(b, stride, k, j);
 }
 
-// rec_strassen_mult(c, a, b, s_sz, sz, thresh)
-//    `a` and `b` are square submatrices with dimension `s_sz`, taken from
-//    larger matrices with dimension `sz`. Recursively computes the matrix
+// rec_strassen_mult(c, a, b, sz, stride, thresh)
+//    `a` and `b` are square submatrices with dimension `sz`, taken from
+//    larger matrices with dimension `stride`. Recursively computes the matrix
 //    product `a x b` using Strassen's algorithm and stores this result to
 //    the submatrix of `c` with the same dimensions. Switches to using n^3 base
 //    algorithm when `sz < thresh`.
 void rec_strassen_mult(int* c, int* a, int* b, size_t sz, size_t stride, size_t thresh) {
-    size_t subsz = sz / 2;
-
-    // allocate scratch matrices
-    int* t = (int*) malloc(sizeof(int) * subsz * sz);
+    size_t subsz = (size_t) sz / 2;
 
     if (sz <= thresh) // base algorithm
-        base_matrix_multiply(c, sz, stride, a, b);
-    else {
+        base_matrix_multiply(c, a, b, sz, stride);
+    else if (sz == 1) {
+        c[0] = a[0] * b[0];
+    } else {
+        // allocate scratch matrices
+        int* t = (int*) calloc(subsz * stride, sizeof(int));
+
         // get submatrices
         int* t1 = me(t, stride, 0, 0);
         int* t2 = me(t, stride, 0, subsz);
@@ -143,7 +150,7 @@ void rec_strassen_mult(int* c, int* a, int* b, size_t sz, size_t stride, size_t 
 
         add_submat(c11, t1, c11, subsz, stride, 0);
         add_submat(c22, t1, c22, subsz, stride, 0);
-        add_submat(t2, a21, a11, subsz, stride, 0);
+        add_submat(t2, a21, a22, subsz, stride, 0);
         rec_strassen_mult(c21, t2, b11, subsz, stride, thresh); // M2
 
         add_submat(c22, c22, c21, subsz, stride, 1);
@@ -161,25 +168,36 @@ void rec_strassen_mult(int* c, int* a, int* b, size_t sz, size_t stride, size_t 
 
         add_submat(c12, c12, t1, subsz, stride, 0);
         add_submat(c11, c11, t1, subsz, stride, 1);
-    }
 
-    // free scratch matrices
-    free(t);
+        // free scratch matrices
+        free(t);
+    }
 }
 
+// strassen_matrix_multiply(c, a, b, sz, thresh)
+//    `a` and `b` are square matrices with dimension `sz`. Computes the matrix
+//    product `a x b` using Strassen's algorithm and stores this result to
+//    the matrix `c` with the same dimensions. Switches to using n^3 base
+//    algorithm when `sz < thresh`.
 void strassen_matrix_multiply(int* c, int* a, int* b, size_t sz, size_t thresh) {
     int *pa, *pb, *pc;
+    size_t psz;
 
     // pad input
-    size_t psz = pad(&pa, a, sz, thresh);
-    size_t pszb = pad(&pb, b, sz, thresh);
-    assert(psz == pszb);
+    psz = pad(&pa, a, sz, thresh);
+    psz = pad(&pb, b, sz, thresh);
 
-    // allocate output matrices
+    // allocate padded output matrix
     pc = (int*) malloc(sizeof(int) * psz * psz);
+
+    // clear output matrices
+    zero_mat(pc, psz, psz);
+    zero_mat(c, sz, sz);
+
+    // call recursive multiply
     rec_strassen_mult(pc, pa, pb, psz, psz, thresh);
 
-    // remove padding
+    // remove padding and store to c
     for (size_t i = 0; i < sz; ++i)
         for (size_t j = 0; j < sz; ++j)
             *me(c, sz, i, j) = *me(pc, psz, i, j);
@@ -190,50 +208,61 @@ void strassen_matrix_multiply(int* c, int* a, int* b, size_t sz, size_t thresh) 
     free(pc);
 }
 
-void print_mat(int* m, size_t sz) {
-    for (size_t i = 0; i < sz; ++i) {
-        for (size_t j = 0; j < sz; ++j)
-            printf(" %d", *me(m, sz, i, j));
-        printf("\n");
-    }
-}
 
 int main(int argc, char* argv[]) {
-    size_t sz = 2;
-    size_t thresh = 1;
+    srand(time(NULL));
+
+    int max_int = 2;
+    size_t sz = 1000;
+    size_t thresh = 512;
+
+    // setup
+    assert(sz > 0);
+    assert(sz < (size_t) sqrt(SIZE_MAX / sizeof(int)));
+    struct timeval s_time0, s_time1, b_time0, b_time1;
 
     // allocate matrices
     int* a = (int*) malloc(sizeof(int) * sz * sz);
     int* b = (int*) malloc(sizeof(int) * sz * sz);
-    int* c = (int*) malloc(sizeof(int) * sz * sz);
+    int* c_base = (int*) malloc(sizeof(int) * sz * sz);
+    int* c_strassen = (int*) malloc(sizeof(int) * sz * sz);
 
     // fill in source matrices
     for (size_t i = 0; i < sz; ++i)
 	   for (size_t j = 0; j < sz; ++j)
-            *me(a, sz, i, j) = xrandom();
+            *me(a, sz, i, j) = rand() % max_int;
 
     for (size_t i = 0; i < sz; ++i)
 	   for (size_t j = 0; j < sz; ++j)
-	      *me(b, sz, i, j) = xrandom();
+	      *me(b, sz, i, j) = rand() % max_int;
 
-    print_mat(a, sz);
-    print_mat(b, sz);
-
-    // compute `c = a x b`
-    printf("computing base...\n");
-    base_matrix_multiply(c, sz, sz, a, b);
-    print_mat(c, sz);
-
-    // clear c
-    for (size_t i = 0; i < sz; ++i)
-        for (size_t j = 0; j < sz; ++j)
-            *me(c, sz, i, j) = 0;
-
+    // strassen matrix multiply
     printf("computing strassen...\n");
-    strassen_matrix_multiply(c, a, b, sz, thresh);
-    print_mat(c, sz);
+    gettimeofday(&s_time0, NULL);
+    strassen_matrix_multiply(c_strassen, a, b, sz, thresh);
+    gettimeofday(&s_time1, NULL);
+
+    // base matrix multiply
+    printf("computing base...\n");
+    gettimeofday(&b_time0, NULL);
+    base_matrix_multiply(c_base, a, b, sz, sz);
+    gettimeofday(&b_time1, NULL);
+
+    // print results
+    int is_equal = equals(c_base, c_strassen, sz);
+    printf("matrices are equal: %d\n", is_equal);
+
+    // compute times, print times and ratio
+    timersub(&s_time1, &s_time0, &s_time1);
+    timersub(&b_time1, &b_time0, &b_time1);
+    printf("base multiply time %ld.%06lds\n", b_time1.tv_sec, b_time1.tv_usec);
+    double time_ratio = (b_time1.tv_sec + b_time1.tv_usec * 0.000001)
+        / (s_time1.tv_sec + s_time1.tv_usec * 0.000001);
+    printf("strassen multiply time %ld.%06lds (%gx)\n",
+           s_time1.tv_sec, s_time1.tv_usec, time_ratio);
 
     free(a);
     free(b);
-    free(c);
+    free(c_base);
+    free(c_strassen);
 }

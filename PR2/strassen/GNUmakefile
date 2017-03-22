@@ -1,12 +1,10 @@
-PROGRAMS = matrixmultiply
+PROGRAMS = strassen
 all: $(PROGRAMS)
-
-include ../common/rules.mk
 
 %.o: %.c $(BUILDSTAMP)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPCFLAGS) $(O) -o $@ -c $<
 
-matrixmultiply: matrixmultiply.o
+strassen: strassen.o
 	$(CC) $(CFLAGS) $(O) -o $@ $^ -lm
 
 clean:
