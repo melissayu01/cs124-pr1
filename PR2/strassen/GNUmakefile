@@ -1,6 +1,8 @@
 PROGRAMS = strassen
 all: $(PROGRAMS)
 
+include rules.mk
+
 %.o: %.c $(BUILDSTAMP)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPCFLAGS) $(O) -o $@ -c $<
 
