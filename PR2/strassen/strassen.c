@@ -150,16 +150,18 @@ void file_to_mat(char* fname, int* a, int* b, size_t sz) {
 
 // rand_mat_to_file(fname, sz, max_val)
 //    Writes 2 square matrices, each with dimension `sz`, sequentially into
-//    file `fname`. All entries in matrices are in the range [0, max_val).
-void rand_mat_to_file(char* fname, size_t sz, int max_val) {
+//    file `fname`. All entries in matrices are random ints in the range [min_val, max_val).
+void rand_mat_to_file(char* fname, size_t sz, int min_val, int max_val) {
     srand(time(NULL));
     FILE* fp = fopen(fname, "w");
     if (!fp) {
         perror(fname);
         exit(EXIT_FAILURE);
     }
+
+    int range = max_val - min_val;
     for (size_t i = 0; i < 2 * pow(sz, 2); ++i)
-        fprintf(fp, "%d\n", rand() % max_val);
+        fprintf(fp, "%d\n", rand() % range + min_val);
     fclose(fp);
 }
 
@@ -227,7 +229,7 @@ int main(int argc, char* argv[]) {
     struct timeval time0, time1, time2, time3;
 
     // TEMPORARY: generate random matrix for testing
-    rand_mat_to_file(fname, sz, 2);
+    rand_mat_to_file(fname, sz, -1, 2);
 
     // allocate matrices
     int* a = (int*) calloc(sz * sz, sizeof(int));
