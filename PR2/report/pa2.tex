@@ -19,7 +19,7 @@
 \maketitle
 
 \section{Overview}
-In this programming assignment, we implement an optimized version of Strassen's algorithm to multiply two $n$ by $n$ matrices. Because Strassen's is slower than conventional matrix multiplication for small matrices, our algorithm uses Strassen's down to a certain optimal threshold size $n_0$, below which we utilize standard matrix multiplication. We find $n_0$ both analytically and experimentally. The results from our studies are presented in this report.
+In this programming assignment, we implement an optimized version of Strassen's algorithm to multiply two $n$ by $n$ matrices. Because Strassen's is slower than conventional matrix multiplication for small matrices, our algorithm uses Strassen's for matrices down to a certain threshold size $n_0$, at which point which we utilize standard matrix multiplication. We find $n_0$ both analytically and experimentally. The results from our studies are presented in this report.
 
 Our code may be run by executing the following commands in the terminal:
 \begin{verbatim}
@@ -30,16 +30,16 @@ where \texttt{verbosity} specifies the verbosity of the output (0 for the minima
 
 \section{Method}
 \subsection{Algorithm}
-We use an optimized version of Strassen's algorithm to multiply two size $n$ matrices $A$ and $B$, where our algorithm uses standard matrix multiplication below a certain size $n_0$. Note that because Strassen's decomposes each larger matrix multiplication into smaller multiplications of blocks of size $n/2$, we require our starting matrices to be of size $n_02^k$, where $k$ is the smallest possible integer such that $n_02^k > n$. We thus statically apply padding to the bottom and right of our starting matrices with 0s until they reach the desired size. When our algorithm is finished, we remove this extra padding of 0s to obtain our final output matrix.
+We use an optimized version of Strassen's algorithm to multiply two size $n$ matrices $A$ and $B$, where our algorithm switches to standard matrix multiplication for matrices of size $n_0$. Note that because Strassen's decomposes each larger matrix multiplication into smaller multiplications of blocks of size $n/2$, we want our starting matrices to be of size $n_02^k$, where $k$ is the smallest possible integer such that $n_02^k > n$. To achieve this, we statically pad the bottom and right of our starting matrices with 0s until they reach the desired size. When our algorithm is finished, we remove this extra padding of 0s to obtain our final output matrix.
 
-When considering how to size our starting matrix appropriately, we also considered dynamically padding the matrices. This works by adding an extra row and column of 0s along the right and bottom only if the matrices being multiplied have an odd dimension, and then removing these extra 0s after the two matrices are multiplied. This method mitigates the costs of multiplying unnecessarily large matrices (a possible concern in static padding), and is a possible consideration for future work.
-
-Once we have correctly-sized starting matrices, we recursively call Strassen's algorithm on $A$ and $B$ until the recursive calls work on matrices of size $n_0$, at which point we switch to standard matrix multiplication. Strassen's requires us to store seven temporary matrix subproducts, and add different combinations of these subproducts up to achieve our final output matrix $C$. To optimize for space and avoid storing each of these subproducts, we store most of the temporary subproducts in the output matrix $C$, conducting our computations in an order such that we only require two temporary storage matrices. The order of computations, which we obtained from [CITE HERE: https://www.cise.ufl.edu/~sahni/papers/strassen.pdf] is as follows:
+Once we have correctly-sized starting matrices, we recursively call Strassen's algorithm on $A$ and $B$ until the recursive calls work on matrices of size $n_0$, at which point we switch to standard matrix multiplication. On inputs of size $k$, Strassen's requires us at each recursive level to store seven temporary matrix subproducts of size $k/2$ and add different combinations of these subproducts up to achieve our final output matrix $C$. To optimize for space and avoid storing each of these subproducts, we store most of the temporary subproducts in the output matrix $C$, conducting our computations in an order such that we only require two temporary storage matrices of size $k/2$ each. The order of computations, which we obtained from [CITE HERE: https://www.cise.ufl.edu/~sahni/papers/strassen.pdf] is as follows:
 \begin{center}
 \includegraphics[width=3in]{computations.png}
 \end{center}
 
 Once Strassen's decomposes into size $n_0$ matrices, we implement an optimized version of standard matrix multiplication... @MELLY BLAH BLAH OPTIMIZED CACHING SHIT
+
+When considering how to pad our matrices to obtain the appropriate matrices, we also considered dynamic padding. Dynamic padding works by adding an extra row and column of padding only if the matrices being multiplied have an odd dimension, and then removing these extra 0s after the two matrices are multiplied. This method mitigates the costs of multiplying unnecessarily large matrices (a possible concern in static padding), and is a possible consideration for future work.
 
 \textbf{Runtime.} As discussed in class, the standard matrix conventional matrix multiplication algorithm runs in $\Theta(n^3)$, while Strassen's runs in $\Theta(n^{log_27})$.
 
@@ -69,15 +69,21 @@ Additionally, we make use of a general \texttt{Experiment} object, which is pass
 \section{Results and Discussion}
 
 \subsection{Analytically determining threshold}
-We analytically determine a crude approximation to $n_0$ by finding equations for the time that the standard and optimize Strassen's algorithms take, and finding the cross-over point at which the standard algorithm runs more quickly than Strassen's.
+We analytically determine a crude approximation to the cross-over point $n_0$ at which the standard matrix multiplication algorithm runs more quickly than normal Strassen's.
 
 First, we note that the standard matrix multiplication algorithm requires $n$ multiplications and $n-1$ additions for each of the $n^2$ entries in the output. Thus:
-$$T_{norm}(n) = n^2(n + (n-1)) = 2n^3 - n^2$$
+$$R(n) = n^2(n + (n-1)) = 2n^3 - n^2$$
 
-We note that Strassen's matrix multiplication algorithm decomposes each input matrix of size $n$ into seven multiplications of submatrices of size $n/2$, along with 18 additions of matrices of size $n/2$ (see table above). Thus, we can describe normal Strassen's via the following recurrence equation: 
-$$T_{Stras}(n) = 7T(n/2) + 18(n/2)^2$$
+We note that normal Strassen's matrix multiplication algorithm decomposes each input matrix of size $n$ into seven multiplications of submatrices of size $n/2$, along with 18 additions of matrices of size $n/2$ (see table above). Thus, we can describe normal Strassen's via the following recurrence equation: 
+$$S(n) = 7S(n/2) + 18(n/2)^2$$
 
-We note that our optimized version of Strassen's uses our conventional matrix multiplication algorithm once the recursive calls  less than $n_0$.
+We note that our optimized version of Strassen's uses our conventional matrix multiplication algorithm once the recursive calls reach inputs of size $n_0$. Thus, at this point:
+\begin{align*}
+R(n) &= 7R(n/2) + 18(n/2)^2 \\
+2n^3-n^2 &= 2(n/2)^3 - (n/2)^2 + 18(n/2)^2
+\end{align*}
+Solving for $n$ gives us $n=15$. BLAHBLAH
+
 
 \subsection{Experimentally determining threshold}
 
