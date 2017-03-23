@@ -168,7 +168,7 @@ void rand_mat_to_file(char* fname, size_t sz, int min_val, int max_val) {
 // usage()
 //    Prints usage instructions to stderr.
 static inline void usage(void) {
-    fprintf(stderr, "Usage: ./strassen [-v VERBOSITY] [-n SIZE] [-f INPUT]\n");
+    fprintf(stderr, "Usage: ./strassen <verbosity> <dimension> <inputfile>\n");
 }
 
 typedef struct matrix_statistics {
@@ -200,26 +200,9 @@ int main(int argc, char* argv[]) {
     size_t thresh = 125;
 
     // read options
-    size_t sz = 0;
-    int vb = 0;
-    char* fname = NULL;
-
-    int opt;
-    while ((opt = getopt(argc, argv, "v:n:f:")) != -1)
-        switch (opt) {
-        case 'v':
-            vb = strtoul(optarg, NULL, 0);
-            break;
-        case 'n':
-            sz = strtoul(optarg, NULL, 0);
-            break;
-        case 'f':
-            fname = optarg;
-            break;
-        default:
-            usage();
-            exit(EXIT_FAILURE);
-        }
+    size_t sz = strtoul(argv[2], NULL, 0);
+    int vb = strtoul(argv[1], NULL, 0);
+    char* fname = argv[3];
 
     if (!(sz > 0 && sz < (size_t) sqrt(SIZE_MAX / sizeof(int))
         && (vb == 0 || vb == 1) && fname != NULL)) {
