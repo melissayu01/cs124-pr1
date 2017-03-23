@@ -3,6 +3,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <getopt.h>
+#include <limits.h>
 
 // MATRIX MULTIPLICATION
 
@@ -57,38 +58,35 @@ void rec_strassen_mult(int* c, int* a, int* b, size_t sz, size_t stride, size_t 
         int* c22 = me(c, stride, subsz, subsz);
 
         // compute result
-        add_submat(c12, a21, a11, subsz, stride, 1);
-        add_submat(c21, b11, b12, subsz, stride, 0);
-        rec_strassen_mult(c22, c12, c21, subsz, stride, thresh); // M6
+        add_submat(t1, a11, a21, subsz, stride, 1);
+        add_submat(t2, b22, b12, subsz, stride, 1);
+        rec_strassen_mult(c21, t1, t2, subsz, stride, thresh); // M6
 
-        add_submat(c12, a12, a22, subsz, stride, 1);
-        add_submat(c21, b21, b22, subsz, stride, 0);
-        rec_strassen_mult(c11, c12, c21, subsz, stride, thresh); // M7
+        add_submat(t1, a21, a22, subsz, stride, 0);
+        add_submat(t2, b12, b11, subsz, stride, 1);
+        rec_strassen_mult(c22, t1, t2, subsz, stride, thresh); // M7
 
-        add_submat(c12, a11, a22, subsz, stride, 0);
-        add_submat(c21, b11, b22, subsz, stride, 0);
-        rec_strassen_mult(t1, c12, c21, subsz, stride, thresh); // M1
+        add_submat(t1, t1, a11, subsz, stride, 1);
+        add_submat(t2, b22, t2, subsz, stride, 1);
+        rec_strassen_mult(c11, t1, t2, subsz, stride, thresh); // M1
+
+        add_submat(t1, a12, t1, subsz, stride, 1);
+        rec_strassen_mult(c12, t1, b22, subsz, stride, thresh); // M2
+
+        add_submat(c12, c22, c12, subsz, stride, 0);
+        rec_strassen_mult(t1, a11, b11, subsz, stride, thresh); // M4
+
+        add_submat(c11, c11, t1, subsz, stride, 0);
+        add_submat(c12, c11, c12, subsz, stride, 0);
+        add_submat(c11, c11, c21, subsz, stride, 0);
+        add_submat(t2, t2, b21, subsz, stride, 1);
+        rec_strassen_mult(c21, a22, t2, subsz, stride, thresh); // M3
+
+        add_submat(c21, c11, c21, subsz, stride, 1);
+        add_submat(c22, c11, c22, subsz, stride, 0);
+        rec_strassen_mult(c11, a12, b21, subsz, stride, thresh); // M5
 
         add_submat(c11, t1, c11, subsz, stride, 0);
-        add_submat(c22, t1, c22, subsz, stride, 0);
-        add_submat(t2, a21, a22, subsz, stride, 0);
-        rec_strassen_mult(c21, t2, b11, subsz, stride, thresh); // M2
-
-        add_submat(c22, c22, c21, subsz, stride, 1);
-        add_submat(t1, b21, b11, subsz, stride, 1);
-        rec_strassen_mult(t2, a22, t1, subsz, stride, thresh); // M4
-
-        add_submat(c21, c21, t2, subsz, stride, 0);
-        add_submat(c11, c11, t2, subsz, stride, 0);
-        add_submat(t1, b12, b22, subsz, stride, 1);
-        rec_strassen_mult(c12, a11, t1, subsz, stride, thresh); // M3
-
-        add_submat(c22, c22, c12, subsz, stride, 0);
-        add_submat(t2, a11, a12, subsz, stride, 0);
-        rec_strassen_mult(t1, t2, b22, subsz, stride, thresh); // M5
-
-        add_submat(c12, c12, t1, subsz, stride, 0);
-        add_submat(c11, c11, t1, subsz, stride, 1);
 
         // free scratch matrices
         free(t);
@@ -200,7 +198,7 @@ struct timeval run_strassen(int vb, int* c, int* a, int* b, size_t sz, size_t th
     struct timeval time0, time1, time2, time3;
 
     // compute `c = a x b`
-    if (vb)
+    if (vb > 0)
         printf("computing strassen...\n");
     gettimeofday(&time0, NULL);
     strassen_matrix_multiply(c, a, b, sz, thresh);
@@ -209,7 +207,7 @@ struct timeval run_strassen(int vb, int* c, int* a, int* b, size_t sz, size_t th
     matrix_statistics strassen_mstat = compute_statistics(c, sz);
 
     // compute times, print times and ratio
-    if (vb) {
+    if (vb > 0) {
         zero_mat(c, sz, sz);
 
         printf("computing base...\n");
@@ -240,46 +238,96 @@ struct timeval run_strassen(int vb, int* c, int* a, int* b, size_t sz, size_t th
     }
 
     // print diagonal
-    if (!vb)
+    if (vb == 0)
         for (size_t i = 0; i < sz; ++i)
             printf("%d\n", strassen_mstat.diagonal[i]);
     free(strassen_mstat.diagonal);
 
     fflush(stdout);
-
     return time1;
 }
 
-int main(int argc, char* argv[]) {
+// compute_optimal_thresh()
+//    Compute optimal thresholds for varying matrix sizes.
+void compute_optimal_thresh(void) {
     // parameters
-    size_t thresh = 125;
+    char* fname = "mat.txt";
+    int vb = -1;
+    int min = -1;
+    int max = 2;
+    int num_trials = 5;
 
-    // read options
-    int vb = strtoul(argv[1], NULL, 0);
-    size_t sz = strtoul(argv[2], NULL, 0);
-    char* fname = argv[3];
+    int *a, *b, *c;
+    double tm;
+    struct timeval t;
 
-    if (!(argc == 4 && sz > 0 && sz < (size_t) sqrt(SIZE_MAX / sizeof(int))
-        && (vb == 0 || vb == 1) && fname != NULL)) {
-        usage();
-        exit(EXIT_FAILURE);
+    for (size_t sz = 550; sz <= 1024; sz += 75) {
+        size_t best_thresh = -1;
+        double best_tm = INT_MAX;
+
+        for (size_t thresh = 0; thresh <= sz; thresh += 1) {
+            tm = 0;
+            for (int i = 0; i < num_trials; ++i) {
+                // generate random matrix for testing
+                rand_mat_to_file(fname, sz, min, max);
+
+                // allocate matrices
+                a = (int*) calloc(sz * sz, sizeof(int));
+                b = (int*) calloc(sz * sz, sizeof(int));
+                c = (int*) calloc(sz * sz, sizeof(int));
+
+                // fill in source matrices
+                file_to_mat(fname, a, b, sz);
+
+                // run strassen's algorithm
+                t = run_strassen(vb, c, a, b, sz, thresh);
+                tm += t.tv_sec + t.tv_usec * 0.000001;
+
+                // free matrices
+                free(a);
+                free(b);
+                free(c);
+            }
+            if (tm / num_trials < best_tm) {
+                best_tm = tm / num_trials;
+                best_thresh = thresh;
+            }
+        }
+        printf("sz=%zu, thresh=%zu, time=%f\n", sz, best_thresh, best_tm);
     }
+}
 
-    // TODO: REMOVE BEFORE SUBMITTING -- generate random matrix for testing
-    rand_mat_to_file(fname, sz, -1, 2);
-
-    // allocate matrices
-    int* a = (int*) calloc(sz * sz, sizeof(int));
-    int* b = (int*) calloc(sz * sz, sizeof(int));
-    int* c = (int*) calloc(sz * sz, sizeof(int));
-
-    // fill in source matrices
-    file_to_mat(fname, a, b, sz);
-
-    // run strassen's algorithm
-    run_strassen(vb, c, a, b, sz, thresh);
-
-    free(a);
-    free(b);
-    free(c);
+int main(int argc, char* argv[]) {
+    compute_optimal_thresh();
+    // // parameters
+    // size_t thresh = 125;
+    //
+    // // read options
+    // int vb = strtoul(argv[1], NULL, 0);
+    // size_t sz = strtoul(argv[2], NULL, 0);
+    // char* fname = argv[3];
+    //
+    // if (!(argc == 4 && sz > 0 && sz < (size_t) sqrt(SIZE_MAX / sizeof(int))
+    //     && (vb == 0 || vb == 1) && fname != NULL)) {
+    //     usage();
+    //     exit(EXIT_FAILURE);
+    // }
+    //
+    // // TODO: REMOVE BEFORE SUBMITTING -- generate random matrix for testing
+    // rand_mat_to_file(fname, sz, -1, 2);
+    //
+    // // allocate matrices
+    // int* a = (int*) calloc(sz * sz, sizeof(int));
+    // int* b = (int*) calloc(sz * sz, sizeof(int));
+    // int* c = (int*) calloc(sz * sz, sizeof(int));
+    //
+    // // fill in source matrices
+    // file_to_mat(fname, a, b, sz);
+    //
+    // // run strassen's algorithm
+    // run_strassen(vb, c, a, b, sz, thresh);
+    //
+    // free(a);
+    // free(b);
+    // free(c);
 }

@@ -52,19 +52,3 @@ void add_submat(int* c, int* a, int* b, size_t sz, size_t stride, int sub_flag) 
             *me(c, stride, i, j) = *me(a, stride, i, j) +
                 (sub_flag ? -1 : 1) * *me(b, stride, i, j);
 }
-
-// STRASSEN
-
-// file_to_mat(fname, a, b, sz)
-//    Reads 2 square matrices, each with dimension `sz`, sequentially into
-//    the memory at `a` and `b`. (Does not allocate memory for `a` and `b`.)
-void file_to_mat(char* fname, int* a, int* b, size_t sz);
-
-// rand_mat_to_file(fname, sz, max_val)
-//    Writes 2 square matrices, each with dimension `sz`, sequentially into
-//    file `fname`. All entries in matrices are random ints in the range [min_val, max_val).
-void rand_mat_to_file(char* fname, size_t sz, int min_val, int max_val);
-
-// run_strassen(vb, c, a, b, sz, thresh)
-//    Run strassen's algorithm.
-struct timeval run_strassen(int vb, int* c, int* a, int* b, size_t sz, size_t thresh);
