@@ -228,7 +228,7 @@ int main(int argc, char* argv[]) {
     }
     struct timeval time0, time1, time2, time3;
 
-    // TEMPORARY: generate random matrix for testing
+    // TODO: REMOVE BEFORE SUBMITTING -- generate random matrix for testing
     rand_mat_to_file(fname, sz, -1, 2);
 
     // allocate matrices
