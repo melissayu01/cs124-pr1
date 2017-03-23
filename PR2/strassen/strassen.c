@@ -194,33 +194,10 @@ matrix_statistics compute_statistics(int* m, size_t sz) {
     return mstat;
 }
 
-
-int main(int argc, char* argv[]) {
-    // parameters
-    size_t thresh = 125;
-
-    // read options
-    size_t sz = strtoul(argv[2], NULL, 0);
-    int vb = strtoul(argv[1], NULL, 0);
-    char* fname = argv[3];
-
-    if (!(sz > 0 && sz < (size_t) sqrt(SIZE_MAX / sizeof(int))
-        && (vb == 0 || vb == 1) && fname != NULL)) {
-        usage();
-        exit(EXIT_FAILURE);
-    }
+// run_strassen(vb, c, a, b, sz, thresh)
+//    Run strassen's algorithm.
+struct timeval run_strassen(int vb, int* c, int* a, int* b, size_t sz, size_t thresh) {
     struct timeval time0, time1, time2, time3;
-
-    // TODO: REMOVE BEFORE SUBMITTING -- generate random matrix for testing
-    rand_mat_to_file(fname, sz, -1, 2);
-
-    // allocate matrices
-    int* a = (int*) calloc(sz * sz, sizeof(int));
-    int* b = (int*) calloc(sz * sz, sizeof(int));
-    int* c = (int*) calloc(sz * sz, sizeof(int));
-
-    // fill in source matrices
-    file_to_mat(fname, a, b, sz);
 
     // compute `c = a x b`
     if (vb)
@@ -228,6 +205,7 @@ int main(int argc, char* argv[]) {
     gettimeofday(&time0, NULL);
     strassen_matrix_multiply(c, a, b, sz, thresh);
     gettimeofday(&time1, NULL);
+    timersub(&time1, &time0, &time1);
     matrix_statistics strassen_mstat = compute_statistics(c, sz);
 
     // compute times, print times and ratio
@@ -238,10 +216,9 @@ int main(int argc, char* argv[]) {
         gettimeofday(&time2, NULL);
         base_matrix_multiply(c, a, b, sz, sz);
         gettimeofday(&time3, NULL);
+        timersub(&time3, &time2, &time3);
         matrix_statistics base_mstat = compute_statistics(c, sz);
 
-        timersub(&time1, &time0, &time1);
-        timersub(&time3, &time2, &time3);
         printf("base multiply time %ld.%06ds\n", time3.tv_sec, time3.tv_usec);
         double time_ratio = (time1.tv_sec + time1.tv_usec * 0.000001)
             / (time3.tv_sec + time3.tv_usec * 0.000001);
@@ -267,6 +244,40 @@ int main(int argc, char* argv[]) {
         for (size_t i = 0; i < sz; ++i)
             printf("%d\n", strassen_mstat.diagonal[i]);
     free(strassen_mstat.diagonal);
+
+    fflush(stdout);
+
+    return time1;
+}
+
+int main(int argc, char* argv[]) {
+    // parameters
+    size_t thresh = 125;
+
+    // read options
+    int vb = strtoul(argv[1], NULL, 0);
+    size_t sz = strtoul(argv[2], NULL, 0);
+    char* fname = argv[3];
+
+    if (!(argc == 4 && sz > 0 && sz < (size_t) sqrt(SIZE_MAX / sizeof(int))
+        && (vb == 0 || vb == 1) && fname != NULL)) {
+        usage();
+        exit(EXIT_FAILURE);
+    }
+
+    // TODO: REMOVE BEFORE SUBMITTING -- generate random matrix for testing
+    rand_mat_to_file(fname, sz, -1, 2);
+
+    // allocate matrices
+    int* a = (int*) calloc(sz * sz, sizeof(int));
+    int* b = (int*) calloc(sz * sz, sizeof(int));
+    int* c = (int*) calloc(sz * sz, sizeof(int));
+
+    // fill in source matrices
+    file_to_mat(fname, a, b, sz);
+
+    // run strassen's algorithm
+    run_strassen(vb, c, a, b, sz, thresh);
 
     free(a);
     free(b);

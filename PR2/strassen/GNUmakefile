@@ -1,4 +1,4 @@
-PROGRAMS = strassen
+PROGRAMS = strassen test
 all: $(PROGRAMS)
 
 include rules.mk
@@ -7,6 +7,9 @@ include rules.mk
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEPCFLAGS) $(O) -o $@ -c $<
 
 strassen: strassen.o
+	$(CC) $(CFLAGS) $(O) -o $@ $^ -lm
+
+test: test.o
 	$(CC) $(CFLAGS) $(O) -o $@ $^ -lm
 
 clean:
