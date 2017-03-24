@@ -98,46 +98,26 @@ Solving for $n_0$ gives us an analytical solution of $n_0 \leq 12$.
 
 \subsection{Experimentally determining threshold}
 
+We experimentally determine the cross-over point $n_0$ at which the standard matrix multiplication algorithm runs more quickly than Strassen's algorithm.
 
+We tested our algorithm for matrices of various sizes up to $n=1024$. For each $n$ we tested, we iterated over all possible threshold values to determine the threshold value $n_0$ that optimized the runtime of our algorithm (averaged across multiple trials). The results of our experiment are plotted below: \\
 
-Our code runs reasonably quickly, taking less than 1 second on average to generate a MST for random graphs of size $n\leq2^{13}$, less than 15 seconds for $n\leq 2^{15}$, around 1.5 minutes for $n=2^{16}$, and around 5.5 minutes for the maximal graph size we tested, $n=2^{17}$. Note that our main time consumption stems from the $O(E)$ calls to ``decrease-key'' on our binary heap. With this in mind, using a Fibonacci heap, which has constant amortized time decrease-key operations, could significantly speed up our implementation to run in $O(n\log n)$ time. This is a direction for future work.
+\begin{centering}
+\includegraphics[width=3in]{threshplot} \\
+\end{centering}
 
-\newpage
-After running our algorithm on MSTs with vertices $n=2^7, 2^8, ..., 2^{17}$, we obtained the following results for average MST weight:
+Examining these results, we did not notice a significant correlation between $n_0$ and $n$, suggesting a constant $n_0$ independent of $n$. This is not surprising, since the crossover point should be a fixed value based on the details of the two algorithms themselves, rather than the size of the input matrices (see section 3.1 for more details).
 
-\begin{table}[htbp]
-  \centering
-    \begin{tabular}{cr|rrrr}
-          & \multicolumn{1}{r}{} & \multicolumn{4}{c}{\textbf{Dimension}} \\
-          &       & \textbf{0} & \textbf{2} & \textbf{3} & \textbf{4} \\
-\cmidrule{2-6}    \multirow{11}[1]{*}{\textbf{$\log_2n$}} & \textbf{7} & 1.113 & 7.716 & 17.833 & 28.518 \\
-          & \textbf{8} & 1.181 & 10.797 & 27.597 & 46.919 \\
-          & \textbf{9} & 1.188 & 14.852 & 43.057 & 78.282 \\
-          & \textbf{10} & 1.190 & 21.093 & 67.795 & 130.567 \\
-          & \textbf{11} & 1.197 & 29.657 & 107.295 & 216.398 \\
-          & \textbf{12} & 1.200 & 41.828 & 169.348 & 360.653 \\
-          & \textbf{13} & 1.201 & 58.878 & 266.873 & 603.351 \\
-          & \textbf{14} & 1.201 & 83.074 & 422.195 & 1009.779 \\
-          & \textbf{15} & 1.201 & 117.552 & 668.605 & 1686.334 \\
-          & \textbf{16} & 1.204 & 166.121 & 1058.731 & 2827.767 \\
-          & \textbf{17} & 1.202 & 234.581 & 1677.107 & 4740.367 \\
-    \end{tabular}%
-  \caption{Average MST weights for various values of $\log_2n$ and dimension.}
-  \label{tab:addlabel}%
-\end{table}%
+Taking the average $n_0$ across all $n$, we determined the experimentally optimal $n_0$ to be roughly \textbf{94}. This value is of the same magnitude as our crude analytical estimate of \textbf{12}, although it is likely slightly greater due to SOME WEIRD CACHING SHIZ @MELLY
 
-Examining these results, we make a few preliminary observations: The average minimal tree weight for the random-weight graphs appears to converge towards a constant, leveling off around $f(n) = 1.203$. On the other hand, the average tree weight for Euclidean distance-weighted graphs appears to grow at a decreasing rate, indicating that the second derivative of the function is negative. A reasonable guess for the function is something of the form $f(n) = cn^k$, where $c>0$ (all tree weights must be strictly positive) and $f''(n) = ck(k-1)n^{k-2} < 0$. Solving for values of $k$ that satisfy the inequality for all $n>0$ yields $0<k<1$. Thus, our initial guess for $f(n)$ is a power function with exponent between 0 and 1, exclusive. Performing linear least-squares regression on the log of the data in R confirms these observations, yielding good fits for the data, and showing that the optimal value of $k$ appears to be different for different dimensions. Based on the fits, we guess that $k\approx \frac{d}{d-1}$, where $d$ is the dimension.
+Notably, our code runs quite quickly, taking less than 0.05 seconds on average to multiply two matrices of size $n = 525$ (for the optimal $n_0$) and less than 0.5 seconds on average for size $n = 1024$. We plot the runtimes (based on the optimal $n_0$) for various $n$ below: \\
 
-Our final estimates for $f(n)$ using non-linear least squares analysis for the family of power functions $cn^{\frac{d-1}{d}}$ are presented below:
+\begin{centering}
+\includegraphics[width=3in]{timeplot} \\
+\end{centering}
 
+After running nonlinear least-squares regression in R, we note that our best fit line $$t(n) = 1.3e-09 \times n^{log_27}$$
+is a good fit for the data. This is unsurprising given our prior analysis of Strassen's as running in $\Theta(n^{log_27})$.
 
-The growth rate for Euclidean distance-weighted graphs is not surprising. First, we note that this function's second derivative is negative, indicating that greater values of $n$ correspond to a lesser increase in $f(n)$. This makes sense, because increasing the number of vertices while limiting the coordinates of each vertex to a unit square/cube/hypercube results in vertices that are clustered more closely together, decreasing the impact of any additional vertices on total MST weight. Thus, a increase in $n$ will not result in an equally proportional increase in $f(n)$, since new vertices are likely to be closer together to existing vertices.
-
-Second, we also note that as the numbers of dimensions increases, the growth rate of $f(n)$ approaches $O(n)$. Again, this makes sense, because increasing the number of dimensions that each vertex has access to decreases the aforementioned clustering effect; that is, adding additional vertices are less likely to result in a graph that is tightly clustered, since these extra vertices are more likely to be "farther" away from existing vertices.
-
-For the random weights case, we simply model the relationship with a constant, because we noted that values of $f(n)$ appeared to converge to a value of around 1.203 as $n$ increased. The data are plotted below, along with a line representing the average value of $f(n)$.
-
-
-Intuitively, this result is not surprising, because increasing $n$ here simply adds vertices to a cluster of extremely ``closely-connected'' nodes (if we visualize edge weight as distance), such that adding additional vertices will have less and less impact on the total minimum spanning tree weight as the size of the graph increases (since any additional vertices will exist within this dense ball).
 
 \end{document}
