@@ -108,7 +108,7 @@ We tested our algorithm for matrices of various sizes up to $n=1024$. For each $
 
 Examining these results, we did not notice a significant correlation between $n_0$ and $n$, suggesting a constant $n_0$ independent of $n$. This is not surprising, since the crossover point should be a fixed value based on the details of the two algorithms themselves, rather than the size of the input matrices (see section 3.1 for more details).
 
-Taking the average $n_0$ across all $n$, we determined the experimentally optimal $n_0$ to be roughly \textbf{94}. This value is of the same magnitude as our crude analytical estimate of \textbf{12}, although it is likely slightly greater due to SOME WEIRD CACHING SHIZ @MELLY
+Taking the average $n_0$ across all $n$, we determined the experimentally optimal $n_0$ to be roughly \textbf{94}. Unsurprisingly, this value is of the same magnitude as our crude analytical estimate of \textbf{12}. (Note: the variation can likely be attributed to computer-specific considerations, as well as different caching considerations arising from how we stored our submatrices and accessed our elements via stepping.)
 
 Notably, our code runs quite quickly, taking less than 0.05 seconds on average to multiply two matrices of size $n = 525$ (for the optimal $n_0$) and less than 0.5 seconds on average for size $n = 1024$. We plot the runtimes (based on the optimal $n_0$) for various $n$ below: \\
 
@@ -116,7 +116,7 @@ Notably, our code runs quite quickly, taking less than 0.05 seconds on average t
 \includegraphics[width=3in]{timeplot} \\
 \end{centering}
 
-After running nonlinear least-squares regression in R, we note that our best fit line $$t(n) = 1.3e-09 \times n^{log_27}$$
+After running nonlinear least-squares regression in R, we note that the best fit line $$t(n) = 1.3e-09 \times n^{log_27}$$
 is a good fit for the data. This is unsurprising given our prior analysis of Strassen's as running in $\Theta(n^{log_27})$.
 
 

@@ -261,12 +261,12 @@ void compute_optimal_thresh(void) {
     double tm;
     struct timeval t;
 
-    for (size_t sz = 1600; sz <= 2048; sz += 75) {
+    for (size_t sz = 0; sz <= 400; sz += 75) {
     // for (size_t sz = 100; sz <= 300; sz += 75) {
         size_t best_thresh = -1;
         double best_tm = INT_MAX;
 
-        for (size_t thresh = 0; thresh <= 1000; thresh += 1) {
+        for (size_t thresh = 0; thresh <= 200; thresh += 1) {
             tm = 0;
             for (int i = 0; i < num_trials; ++i) {
                 // generate random matrix for testing
@@ -299,36 +299,36 @@ void compute_optimal_thresh(void) {
 }
 
 int main(int argc, char* argv[]) {
-    compute_optimal_thresh();
-    // // parameters
-    // size_t thresh = 125;
-    //
-    // // read options
-    // int vb = strtoul(argv[1], NULL, 0);
-    // size_t sz = strtoul(argv[2], NULL, 0);
-    // char* fname = argv[3];
-    //
-    // if (!(argc == 4 && sz > 0 && sz < (size_t) sqrt(SIZE_MAX / sizeof(int))
-    //     && (vb == 0 || vb == 1) && fname != NULL)) {
-    //     usage();
-    //     exit(EXIT_FAILURE);
-    // }
-    //
-    // // TODO: REMOVE BEFORE SUBMITTING -- generate random matrix for testing
-    // rand_mat_to_file(fname, sz, -1, 2);
-    //
-    // // allocate matrices
-    // int* a = (int*) calloc(sz * sz, sizeof(int));
-    // int* b = (int*) calloc(sz * sz, sizeof(int));
-    // int* c = (int*) calloc(sz * sz, sizeof(int));
-    //
-    // // fill in source matrices
-    // file_to_mat(fname, a, b, sz);
-    //
-    // // run strassen's algorithm
-    // run_strassen(vb, c, a, b, sz, thresh);
-    //
-    // free(a);
-    // free(b);
-    // free(c);
+    // compute_optimal_thresh();
+    // parameters
+    size_t thresh = 94;
+    
+    // read options
+    int vb = strtoul(argv[1], NULL, 0);
+    size_t sz = strtoul(argv[2], NULL, 0);
+    char* fname = argv[3];
+    
+    if (!(argc == 4 && sz > 0 && sz < (size_t) sqrt(SIZE_MAX / sizeof(int))
+        && (vb == 0 || vb == 1) && fname != NULL)) {
+        usage();
+        exit(EXIT_FAILURE);
+    }
+    
+    // TODO: REMOVE BEFORE SUBMITTING -- generate random matrix for testing
+    // rand_mat_to_file(fname, sz, 0, 3);
+    
+    // allocate matrices
+    int* a = (int*) calloc(sz * sz, sizeof(int));
+    int* b = (int*) calloc(sz * sz, sizeof(int));
+    int* c = (int*) calloc(sz * sz, sizeof(int));
+    
+    // fill in source matrices
+    file_to_mat(fname, a, b, sz);
+    
+    // run strassen's algorithm
+    run_strassen(vb, c, a, b, sz, thresh);
+    
+    free(a);
+    free(b);
+    free(c);
 }
