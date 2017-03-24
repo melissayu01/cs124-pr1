@@ -261,11 +261,12 @@ void compute_optimal_thresh(void) {
     double tm;
     struct timeval t;
 
-    for (size_t sz = 550; sz <= 1024; sz += 75) {
+    for (size_t sz = 1600; sz <= 2048; sz += 75) {
+    // for (size_t sz = 100; sz <= 300; sz += 75) {
         size_t best_thresh = -1;
         double best_tm = INT_MAX;
 
-        for (size_t thresh = 0; thresh <= sz; thresh += 1) {
+        for (size_t thresh = 0; thresh <= 1000; thresh += 1) {
             tm = 0;
             for (int i = 0; i < num_trials; ++i) {
                 // generate random matrix for testing
