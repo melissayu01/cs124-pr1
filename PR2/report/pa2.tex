@@ -30,16 +30,21 @@ where \texttt{verbosity} specifies the verbosity of the output (0 for the minima
 
 \section{Method}
 \subsection{Algorithm}
-We use an optimized version of Strassen's algorithm to multiply two size $n$ matrices $A$ and $B$, where our algorithm switches to standard matrix multiplication for matrices of size $n_0$. Note that because Strassen's decomposes each larger matrix multiplication into smaller multiplications of blocks of size $n/2$, we want our starting matrices to be of size $n_02^k$, where $k$ is the smallest possible integer such that $n_02^k > n$. To achieve this, we statically pad the bottom and right of our starting matrices with 0s until they reach the desired size. When our algorithm is finished, we remove this extra padding of 0s to obtain our final output matrix.
+We use an optimized version of Strassen's algorithm to multiply two size $n$ matrices $A$ and $B$, where our algorithm switches to standard matrix multiplication for matrices of size $n_0$. Note that because Strassen's decomposes each larger matrix multiplication into smaller multiplications of blocks of size $n/2$, we want our starting matrices to be of size $n_02^k$, where $k$ is the smallest possible non-negative integer such that $n_02^k > n$. To achieve this, we statically pad the bottom and right of our starting matrices with 0s until they reach the desired size. When our algorithm is finished, we remove this extra padding of 0s to obtain our final output matrix.
 
-Once we have correctly-sized starting matrices, we recursively call Strassen's algorithm on $A$ and $B$ until the recursive calls work on matrices of size $n_0$, at which point we switch to standard matrix multiplication. On inputs of size $k$, Strassen's requires us at each recursive level to store seven temporary matrix subproducts of size $k/2$ and add different combinations of these subproducts up to achieve our final output matrix $C$. To optimize for space and avoid storing each of these subproducts, we store most of the temporary subproducts in the output matrix $C$, conducting our computations in an order such that we only require two temporary storage matrices of size $k/2$ each. The order of computations, which we obtained from [CITE HERE: https://www.cise.ufl.edu/~sahni/papers/strassen.pdf] is as follows:
-\begin{center}
-\includegraphics[width=3in]{computations.png}
-\end{center}
+Once we have correctly-sized starting matrices, we recursively call Strassen's algorithm on $A$ and $B$ until the recursive calls work on matrices of size $n_0$, at which point we switch to standard matrix multiplication. On inputs of size $k$, Strassen's requires us at each recursive level to calculate seven temporary matrix subproducts of size $k/2$ and add different combinations of these subproducts up to achieve our final output matrix $C$. 
+
+To optimize for space and avoid storing each of these subproducts in memory, we store most of the temporary subproducts in the output matrix $C$, storing the subproducts in such an order that we only require two temporary storage matrices $T_1, T_2$ of size $k/2$ each. [Table 1] To optimize efficiency, we chose to implement Winograd's variant of Strassen's algorithm. Winograd's variant conducts computations in a way that requires only 15 submatrix additions at each recursive level, as opposed to 18 additions for normal Strassen's [Li, Junjie, Sanjay Ranka, and Sartaj Sahni. "Strassen's matrix multiplication on GPUs." \textit{Parallel and Distributed Systems (ICPADS), 2011 IEEE 17th International Conference on.} IEEE, 2011.]
+
+\begin{figure}[h]
+	\caption{Order of computations for Douglas's implementation of Winograd's variant. Table taken from (Li et. al., 2011).}
+	\centering
+		\includegraphics[width=3in]{computations.png}
+\end{figure}
 
 Once Strassen's decomposes into size $n_0$ matrices, we implement an optimized version of standard matrix multiplication... @MELLY BLAH BLAH OPTIMIZED CACHING SHIT
 
-When considering how to pad our matrices to obtain the appropriate matrices, we also considered dynamic padding. Dynamic padding works by adding an extra row and column of padding only if the matrices being multiplied have an odd dimension, and then removing these extra 0s after the two matrices are multiplied. This method mitigates the costs of multiplying unnecessarily large matrices (a possible concern in static padding), and is a possible consideration for future work.
+When considering how to pad our matrices to obtain the appropriate dimensions, we also considered dynamic padding. Dynamic padding works by adding an extra row and column of padding only if the matrices being multiplied have an odd dimension, and then removing these extra 0s after the two matrices are multiplied. This method mitigates the costs of multiplying unnecessarily large matrices (a possible concern in static padding), and is a possible consideration for future work.
 
 \textbf{Runtime.} As discussed in class, the standard matrix conventional matrix multiplication algorithm runs in $\Theta(n^3)$, while Strassen's runs in $\Theta(n^{log_27})$.
 
@@ -74,15 +79,17 @@ We analytically determine a crude approximation to the cross-over point $n_0$ at
 First, we note that the standard matrix multiplication algorithm requires $n$ multiplications and $n-1$ additions for each of the $n^2$ entries in the output. Thus:
 $$R(n) = n^2(n + (n-1)) = 2n^3 - n^2$$
 
-We note that normal Strassen's matrix multiplication algorithm decomposes each input matrix of size $n$ into seven multiplications of submatrices of size $n/2$, along with 18 additions of matrices of size $n/2$ (see table above). Thus, we can describe normal Strassen's via the following recurrence equation: 
-$$S(n) = 7S(n/2) + 18(n/2)^2$$
+We note that the Winograd variant of Strassen's matrix multiplication algorithm decomposes each input matrix of size $n$ into seven multiplications of submatrices of size $n/2$, along with 15 additions of matrices of size $n/2$ [Table 1]. Thus, we can describe Winograd's variant via the following recurrence equation: 
+$$T(n) = 7T(n/2) + 15(n/2)^2$$
 
-We note that our optimized version of Strassen's uses our conventional matrix multiplication algorithm once the recursive calls reach inputs of size $n_0$. Thus, at this point:
+We note that our optimized version of Winograd uses conventional matrix multiplication once the recursive calls reach inputs of size $n_0$. Thus, because our base case for our recursive algorithm is $T(n_0) = R(n_0)$, to obtain $n_0$ we can solve the following inequalities:
 \begin{align*}
-R(n) &= 7R(n/2) + 18(n/2)^2 \\
-2n^3-n^2 &= 2(n/2)^3 - (n/2)^2 + 18(n/2)^2
+R(n) &\leq 7R(n/2) + 15(n/2)^2 \\
+2n^3-n^2 &\leq 2(n/2)^3 - (n/2)^2 + 15(n/2)^2
 \end{align*}
-Solving for $n$ gives us $n=15$. BLAHBLAH
+Solving for $n$ gives us $n \leq 12$. 
+
+BLAH BLAH MELLY
 
 
 \subsection{Experimentally determining threshold}
